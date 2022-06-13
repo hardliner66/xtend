@@ -1,7 +1,7 @@
 [package]
 name = "xtend"
 description = "Simple tool to work with file extensions"
-license = "MIT"
+license-file = "LICENSE"
 homepage = "https://github.com/hardliner66/xtend"
 repository = "https://github.com/hardliner66/xtend"
 version = "0.1.0"
