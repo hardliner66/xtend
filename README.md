@@ -1,5 +1,33 @@
 # xtend
 
+## Description
+xtend is a simple tool to help add or remove file extensions.
+
+I started this tool because I needed to change the file extension for certain files,
+so that another tool stops detecting them when I needed to test something and restore
+the old extension when I'm done.
+
+This is relatively simple for single files, but if you need many of them it gets a bit more tricky.
+There are plain unix ways to do it, but those are hard to remember and more error prone.
+
+With this tool I can just do something like this:
+```sh
+# assuming there exists a file named 'test.txt'
+xtend toggle bak test.txt
+```
+and if the file is named `test.txt` it will get renamed to `test.txt.bak`,
+if it's named `test.txt.bak` instead, it will get renamed to `test.txt`.
+
+## Install
+
+From binary release:
+[https://github.com/hardliner66/xtend/releases](releases)
+
+With cargo:
+```sh
+cargo install xtend
+```
+
 ## Usage:
 
 ```sh
