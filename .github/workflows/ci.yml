@@ -93,5 +93,5 @@ jobs:
     image: registry.gitlab.com/torkleyy/cargo-publish-all:latest
     stage: deploy
     script:
-    - cargo-publish-all --token $CRATES_IO_TOKEN --yes
+      - cargo-publish-all --token $CRATES_IO_TOKEN --yes
 
