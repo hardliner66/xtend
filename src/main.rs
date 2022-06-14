@@ -36,26 +36,26 @@ enum Action {
     /// Adds an extension when it's missing or removes it when it's present.
     Toggle {
         /// Extension to be toggled.
-        #[clap(value_parser)]
+        #[clap(value_parser = ExtensionParser)]
         extension: String,
 
-        /// Glob pattern to filter files.
-        #[clap(value_parser = ExtensionParser)]
-        glob: String,
+        /// Glob patterns to filter files.
+        #[clap(value_parser, required = true)]
+        globs: Vec<String>,
     },
     /// Toggles between two extensions.
     ToggleBetween {
         /// Extension 1.
-        #[clap(value_parser)]
+        #[clap(value_parser = ExtensionParser)]
         extension1: String,
 
         /// Extension 2.
-        #[clap(value_parser)]
+        #[clap(value_parser = ExtensionParser)]
         extension2: String,
 
         /// Optional glob pattern to filter files.
-        #[clap(value_parser = ExtensionParser)]
-        glob: Option<String>,
+        #[clap(value_parser)]
+        globs: Vec<String>,
     },
     /// Adds an extension to all found files.
     Add {
@@ -64,8 +64,8 @@ enum Action {
         extension: String,
 
         /// Glob pattern to search for files.
-        #[clap(value_parser)]
-        glob: String,
+        #[clap(value_parser, required = true)]
+        globs: Vec<String>,
     },
     /// Removes an extension from all found files.
     Remove {
@@ -74,8 +74,8 @@ enum Action {
         extension: Option<String>,
 
         /// Glob pattern to search for files.
-        #[clap(value_parser)]
-        glob: String,
+        #[clap(value_parser, required = true)]
+        globs: Vec<String>,
     },
 }
 
@@ -83,75 +83,81 @@ fn is_file(e: &Result<PathBuf, GlobError>) -> bool {
     e.iter().all(|f| f.is_file())
 }
 
+fn get_files(globs: &[String]) -> Result<Vec<PathBuf>, Box<dyn std::error::Error>> {
+    let mut result = Vec::new();
+    for glob in globs {
+        let files = glob::glob(&glob)?.filter(is_file);
+        for f in files {
+            result.push(f?);
+        }
+    }
+    Ok(result)
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
 
     match args.action {
         Action::ToggleBetween {
-            glob,
+            globs,
             extension1,
             extension2,
         } => {
-            let files = glob::glob(&glob.unwrap_or("*".to_string()))?.filter(is_file);
-            for f in files {
-                match f {
-                    Ok(path) => {
-                        if let Some(ext) = path.extension() {
-                            if extension1 == ext.to_string_lossy().to_string() {
-                                std::fs::rename(&path, path.with_extension(&extension2))?
-                            } else if extension2 == ext.to_string_lossy().to_string() {
-                                std::fs::rename(&path, path.with_extension(&extension1))?
-                            }
-                        }
+            let globs = if globs.len() == 0 {
+                vec!["*".to_owned()]
+            } else {
+                globs
+            };
+            let paths = get_files(&globs)?;
+            for path in paths {
+                if let Some(ext) = path.extension() {
+                    if extension1 == ext.to_string_lossy().to_string() {
+                        std::fs::rename(&path, path.with_extension(&extension2))?
+                    } else if extension2 == ext.to_string_lossy().to_string() {
+                        std::fs::rename(&path, path.with_extension(&extension1))?
                     }
-                    Err(e) => println!("{:?}", e),
                 }
             }
         }
-        Action::Toggle { glob, extension } => {
-            let files = glob::glob(&glob)?.collect::<Vec<_>>();
-            let files2 = glob::glob(&format!("{}.{}", glob, extension))?.collect::<Vec<_>>();
-
-            for f in files.into_iter().chain(files2.into_iter()).filter(is_file) {
-                match f {
-                    Ok(path) => {
-                        if let Some(ext) = path.extension() {
-                            if extension == ext.to_string_lossy().to_string() {
-                                if let Some(new_path) = path.file_stem() {
-                                    std::fs::rename(&path, path.with_file_name(new_path))?
-                                }
-                            } else {
-                                let new_name = match path.extension() {
-                                    Some(ext) => {
-                                        let mut ext = ext.to_os_string();
-                                        ext.push(".");
-                                        ext.push(&extension);
-                                        path.with_extension(ext)
-                                    }
-                                    None => path.with_extension(&extension),
-                                };
-                                std::fs::rename(&path, new_name)?
-                            }
+        Action::Toggle { globs, extension } => {
+            let mut new_globs = Vec::with_capacity(globs.len() * 2);
+            for glob in &globs {
+                new_globs.push(glob.clone());
+                new_globs.push(format!("{}.{}", glob, extension));
+            }
+            let paths = get_files(&globs)?;
+            for path in paths {
+                if let Some(ext) = path.extension() {
+                    if extension == ext.to_string_lossy().to_string() {
+                        if let Some(new_path) = path.file_stem() {
+                            std::fs::rename(&path, path.with_file_name(new_path))?
                         }
+                    } else {
+                        let new_name = match path.extension() {
+                            Some(ext) => {
+                                let mut ext = ext.to_os_string();
+                                ext.push(".");
+                                ext.push(&extension);
+                                path.with_extension(ext)
+                            }
+                            None => path.with_extension(&extension),
+                        };
+                        std::fs::rename(&path, new_name)?
                     }
-                    Err(e) => println!("{:?}", e),
                 }
             }
         }
-        Action::Add { glob, extension } => {
-            let files = glob::glob(&glob)?.filter(is_file);
-            for f in files {
-                match f {
-                    Ok(path) => std::fs::rename(&path, path.with_extension(&extension))?,
-                    Err(e) => println!("{:?}", e),
-                }
+        Action::Add { globs, extension } => {
+            let paths = get_files(&globs)?;
+            for path in paths {
+                std::fs::rename(&path, path.with_extension(&extension))?;
             }
         }
-        Action::Remove { glob, extension } => {
-            let files = glob::glob(&glob)?.filter(is_file);
-            for f in files {
-                match (f, &extension) {
-                    (Ok(path), Some(extension)) => {
+        Action::Remove { globs, extension } => {
+            let paths = get_files(&globs)?;
+            for path in paths {
+                match &extension {
+                    Some(extension) => {
                         if let Some(ext) = path.extension() {
                             if extension == &ext.to_string_lossy().to_string() {
                                 if let Some(new_path) = path.file_stem() {
@@ -160,12 +166,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             }
                         }
                     }
-                    (Ok(path), None) => {
+                    None => {
                         if let Some(new_path) = path.file_stem() {
                             std::fs::rename(&path, path.with_file_name(new_path))?
                         }
                     }
-                    (Err(e), _) => println!("{:?}", e),
                 }
             }
         }
