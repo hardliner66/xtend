@@ -21,7 +21,7 @@ if it's named `test.txt.bak` instead, it will get renamed to `test.txt`.
 ## Install
 
 From binary release:
-https://github.com/account/project/releases/latest
+https://github.com/hardliner66/xtend/releases/latest
 
 With cargo:
 ```sh
