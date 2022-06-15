@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, ffi::OsString};
 
 use clap::{builder::TypedValueParser, Parser};
 use glob::GlobError;
@@ -14,7 +14,7 @@ struct Args {
 struct ExtensionParser;
 
 impl TypedValueParser for ExtensionParser {
-    type Value = String;
+    type Value = OsString;
 
     fn parse_ref(
         &self,
@@ -24,9 +24,9 @@ impl TypedValueParser for ExtensionParser {
     ) -> Result<Self::Value, clap::Error> {
         let value = value.to_string_lossy().to_string();
         if value.starts_with(".") {
-            Ok(value.replacen(".", "", 1))
+            Ok(value.replacen(".", "", 1).into())
         } else {
-            Ok(value)
+            Ok(value.into())
         }
     }
 }
@@ -37,7 +37,7 @@ enum Action {
     Toggle {
         /// Extension to be toggled.
         #[clap(value_parser = ExtensionParser)]
-        extension: String,
+        extension: OsString,
 
         /// Glob patterns to filter files.
         #[clap(value_parser, required = true)]
@@ -47,11 +47,11 @@ enum Action {
     ToggleBetween {
         /// Extension 1.
         #[clap(value_parser = ExtensionParser)]
-        extension1: String,
+        extension1: OsString,
 
         /// Extension 2.
         #[clap(value_parser = ExtensionParser)]
-        extension2: String,
+        extension2: OsString,
 
         /// Optional glob pattern to filter files.
         #[clap(value_parser)]
@@ -61,7 +61,7 @@ enum Action {
     Set {
         /// Extension to be toggled.
         #[clap(value_parser = ExtensionParser)]
-        extension: String,
+        extension: OsString,
 
         /// Glob patterns to filter files.
         #[clap(value_parser, required = true)]
@@ -69,9 +69,13 @@ enum Action {
     },
     /// Adds an extension to all found files.
     Add {
+        /// add extension even if the file already has the same extension.
+        #[clap(short, long, action)]
+        force: bool,
+
         /// The extension to add to a file.
         #[clap(value_parser = ExtensionParser)]
-        extension: String,
+        extension: OsString,
 
         /// Glob pattern to search for files.
         #[clap(value_parser, required = true)]
@@ -81,7 +85,7 @@ enum Action {
     Remove {
         /// The extension to be removed from a file. Removes any extension if not set.
         #[clap(value_parser = ExtensionParser)]
-        extension: Option<String>,
+        extension: Option<OsString>,
 
         /// Glob pattern to search for files.
         #[clap(value_parser)]
@@ -121,7 +125,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let paths = get_files(&globs)?;
             for path in paths {
                 if let Some(ext) = path.extension() {
-                    let ext = ext.to_string_lossy().to_string();
                     if extension1 == ext {
                         std::fs::rename(&path, path.with_extension(&extension2))?
                     } else if extension2 == ext {
@@ -134,12 +137,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let mut new_globs = Vec::with_capacity(globs.len() * 2);
             for glob in &globs {
                 new_globs.push(glob.clone());
-                new_globs.push(format!("{}.{}", glob, extension));
+                new_globs.push(format!("{}.{}", glob, extension.to_string_lossy()));
             }
             let paths = get_files(&new_globs)?;
             for path in paths {
                 if let Some(ext) = path.extension() {
-                    if extension == ext.to_string_lossy().to_string() {
+                    if extension == ext {
                         if let Some(new_path) = path.file_stem() {
                             std::fs::rename(&path, path.with_file_name(new_path))?
                         }
@@ -158,14 +161,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
         }
-        Action::Add { globs, extension } => {
+        Action::Add { globs, extension, force } => {
             let paths = get_files(&globs)?;
             for path in paths {
                 let new_name = match path.extension() {
                     Some(ext) => {
                         let mut ext = ext.to_os_string();
-                        ext.push(".");
-                        ext.push(&extension);
+                        if force || ext != extension {
+                            ext.push(".");
+                            ext.push(&extension);
+                        }
                         path.with_extension(ext)
                     }
                     None => path.with_extension(&extension),
@@ -185,7 +190,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 match &extension {
                     Some(extension) => {
                         if let Some(ext) = path.extension() {
-                            if extension == &ext.to_string_lossy().to_string() {
+                            if extension == &ext {
                                 if let Some(new_path) = path.file_stem() {
                                     std::fs::rename(&path, path.with_file_name(new_path))?
                                 }
