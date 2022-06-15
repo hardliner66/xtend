@@ -121,9 +121,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let paths = get_files(&globs)?;
             for path in paths {
                 if let Some(ext) = path.extension() {
-                    if extension1 == ext.to_string_lossy().to_string() {
+                    let ext = ext.to_string_lossy().to_string();
+                    if extension1 == ext {
                         std::fs::rename(&path, path.with_extension(&extension2))?
-                    } else if extension2 == ext.to_string_lossy().to_string() {
+                    } else if extension2 == ext {
                         std::fs::rename(&path, path.with_extension(&extension1))?
                     }
                 }
@@ -135,7 +136,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 new_globs.push(glob.clone());
                 new_globs.push(format!("{}.{}", glob, extension));
             }
-            let paths = get_files(&globs)?;
+            let paths = get_files(&new_globs)?;
             for path in paths {
                 if let Some(ext) = path.extension() {
                     if extension == ext.to_string_lossy().to_string() {
