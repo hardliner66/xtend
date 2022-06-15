@@ -48,7 +48,6 @@ SUBCOMMANDS:
     set               Replaces the extension with the given one
     toggle            Adds an extension when it's missing or removes it when it's present
     toggle-between    Toggles between two extensions
-
 ```
 
 ### xtend add --help
@@ -57,14 +56,15 @@ xtend-add
 Adds an extension to all found files
 
 USAGE:
-    xtend add <EXTENSION> <GLOBS>...
+    xtend add [OPTIONS] <EXTENSION> <FILES>...
 
 ARGS:
     <EXTENSION>    The extension to add to a file
-    <GLOBS>...     Glob pattern to search for files
+    <FILES>...     List of files to change
 
 OPTIONS:
-    -h, --help    Print help information
+    -f, --force    add extension even if the file already has the same extension
+    -h, --help     Print help information
 ```
 
 ### xtend set --help
@@ -73,11 +73,11 @@ xtend-set
 Replaces the extension with the given one
 
 USAGE:
-    xtend set <EXTENSION> <GLOBS>...
+    xtend set <EXTENSION> <FILES>...
 
 ARGS:
     <EXTENSION>    Extension to be toggled
-    <GLOBS>...     Glob patterns to filter files
+    <FILES>...     List of files to change
 
 OPTIONS:
     -h, --help    Print help information
@@ -89,11 +89,11 @@ xtend-remove
 Removes an extension from all found files
 
 USAGE:
-    xtend remove [ARGS]
+    xtend remove <EXTENSION> <FILES>...
 
 ARGS:
     <EXTENSION>    The extension to be removed from a file. Removes any extension if not set
-    <GLOBS>...     Glob pattern to search for files
+    <FILES>...     List of files to change
 
 OPTIONS:
     -h, --help    Print help information
@@ -105,11 +105,11 @@ xtend-toggle
 Adds an extension when it's missing or removes it when it's present
 
 USAGE:
-    xtend toggle <EXTENSION> <GLOBS>...
+    xtend toggle <EXTENSION> <FILES>...
 
 ARGS:
     <EXTENSION>    Extension to be toggled
-    <GLOBS>...     Glob patterns to filter files
+    <FILES>...     List of files to change
 
 OPTIONS:
     -h, --help    Print help information
@@ -121,14 +121,13 @@ xtend-toggle-between
 Toggles between two extensions
 
 USAGE:
-    xtend toggle-between <EXTENSION1> <EXTENSION2> [GLOBS]...
+    xtend toggle-between <EXTENSION1> <EXTENSION2> [FILES]...
 
 ARGS:
     <EXTENSION1>    Extension 1
     <EXTENSION2>    Extension 2
-    <GLOBS>...      Optional glob pattern to filter files
+    <FILES>...      List of files to change
 
 OPTIONS:
     -h, --help    Print help information
 ```
-
