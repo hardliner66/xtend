@@ -1,4 +1,4 @@
-use std::{path::PathBuf, ffi::OsString};
+use std::{ffi::OsString, path::PathBuf};
 
 use clap::{builder::TypedValueParser, Parser};
 use glob::GlobError;
@@ -85,10 +85,10 @@ enum Action {
     Remove {
         /// The extension to be removed from a file. Removes any extension if not set.
         #[clap(value_parser = ExtensionParser)]
-        extension: Option<OsString>,
+        extension: OsString,
 
         /// Glob pattern to search for files.
-        #[clap(value_parser)]
+        #[clap(value_parser, required = true)]
         globs: Vec<String>,
     },
 }
@@ -161,7 +161,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
         }
-        Action::Add { globs, extension, force } => {
+        Action::Add {
+            globs,
+            extension,
+            force,
+        } => {
             let paths = get_files(&globs)?;
             for path in paths {
                 let new_name = match path.extension() {
@@ -187,19 +191,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Action::Remove { globs, extension } => {
             let paths = get_files(&globs)?;
             for path in paths {
-                match &extension {
-                    Some(extension) => {
-                        if let Some(ext) = path.extension() {
-                            if extension == &ext {
-                                if let Some(new_path) = path.file_stem() {
-                                    std::fs::rename(&path, path.with_file_name(new_path))?
-                                }
-                            }
-                        }
+                if extension.is_empty() {
+                    if let Some(new_path) = path.file_stem() {
+                        std::fs::rename(&path, path.with_file_name(new_path))?
                     }
-                    None => {
-                        if let Some(new_path) = path.file_stem() {
-                            std::fs::rename(&path, path.with_file_name(new_path))?
+                } else {
+                    if let Some(ext) = path.extension() {
+                        if extension == ext {
+                            if let Some(new_path) = path.file_stem() {
+                                std::fs::rename(&path, path.with_file_name(new_path))?
+                            }
                         }
                     }
                 }
