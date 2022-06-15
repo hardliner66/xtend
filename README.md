@@ -31,22 +31,24 @@ cargo install xtend
 ## Usage:
 ### xtend --help
 ```sh
-xtend 
-Simple tool to work with file extensions
+xtend
+command line helper to work with file extensions
 
 USAGE:
     xtend <SUBCOMMAND>
 
 OPTIONS:
     -h, --help       Print help information
-    -v, --version    Print version information
+    -V, --version    Print version information
 
 SUBCOMMANDS:
     add               Adds an extension to all found files
     help              Print this message or the help of the given subcommand(s)
     remove            Removes an extension from all found files
+    set               Replaces the extension with the given one
     toggle            Adds an extension when it's missing or removes it when it's present
     toggle-between    Toggles between two extensions
+
 ```
 
 ### xtend add --help
