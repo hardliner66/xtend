@@ -1,10 +1,10 @@
 use std::path::PathBuf;
 
-use clap::{builder::TypedValueParser, Parser};
+use clap::{builder::TypedValueParser, ArgAction, Parser};
 use glob::GlobError;
 
 #[derive(Parser, Debug)]
-#[clap(version, about, long_about = None)]
+#[clap(version, about = "command line helper to work with file extensions", long_about = None)]
 struct Args {
     #[clap(subcommand)]
     action: Action,
@@ -74,7 +74,7 @@ enum Action {
         extension: Option<String>,
 
         /// Glob pattern to search for files.
-        #[clap(value_parser, required = true)]
+        #[clap(value_parser)]
         globs: Vec<String>,
     },
 }

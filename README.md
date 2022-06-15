@@ -29,9 +29,9 @@ cargo install xtend
 ```
 
 ## Usage:
-
+### xtend --help
 ```sh
-xtend 0.1.0
+xtend 
 Simple tool to work with file extensions
 
 USAGE:
@@ -39,7 +39,7 @@ USAGE:
 
 OPTIONS:
     -h, --help       Print help information
-    -V, --version    Print version information
+    -v, --version    Print version information
 
 SUBCOMMANDS:
     add               Adds an extension to all found files
@@ -49,66 +49,66 @@ SUBCOMMANDS:
     toggle-between    Toggles between two extensions
 ```
 
-### xtend add
+### xtend add --help
 ```sh
 xtend-add 
 Adds an extension to all found files
 
 USAGE:
-    xtend add <EXTENSION> <GLOB>
+    xtend add <EXTENSION> <GLOBS>...
 
 ARGS:
     <EXTENSION>    The extension to add to a file
-    <GLOB>         Glob pattern to search for files
+    <GLOBS>...     Glob pattern to search for files
 
 OPTIONS:
     -h, --help    Print help information
 ```
 
-### xtend remove
+### xtend remove --help
 ```sh
 xtend-remove 
 Removes an extension from all found files
 
 USAGE:
-    xtend remove <GLOB> [EXTENSION]
+    xtend remove [ARGS]
 
 ARGS:
     <EXTENSION>    The extension to be removed from a file. Removes any extension if not set
-    <GLOB>         Glob pattern to search for files
+    <GLOBS>...     Glob pattern to search for files
 
 OPTIONS:
     -h, --help    Print help information
 ```
 
-### xtend toggle
+### xtend toggle --help
 ```sh
 xtend-toggle 
 Adds an extension when it's missing or removes it when it's present
 
 USAGE:
-    xtend toggle <EXTENSION> <GLOB>
+    xtend toggle <EXTENSION> <GLOBS>...
 
 ARGS:
     <EXTENSION>    Extension to be toggled
-    <GLOB>         Glob pattern to filter files
+    <GLOBS>...     Glob patterns to filter files
 
 OPTIONS:
     -h, --help    Print help information
 ```
 
-### xtend toggle-between
+### xtend toggle-between --help
 ```sh
 xtend-toggle-between 
 Toggles between two extensions
 
 USAGE:
-    xtend toggle-between <EXTENSION1> <EXTENSION2> [GLOB]
+    xtend toggle-between <EXTENSION1> <EXTENSION2> [GLOBS]...
 
 ARGS:
     <EXTENSION1>    Extension 1
     <EXTENSION2>    Extension 2
-    <GLOB>          Optional glob pattern to filter files
+    <GLOBS>...      Optional glob pattern to filter files
 
 OPTIONS:
     -h, --help    Print help information
