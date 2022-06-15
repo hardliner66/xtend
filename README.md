@@ -65,6 +65,22 @@ OPTIONS:
     -h, --help    Print help information
 ```
 
+### xtend set --help
+```sh
+xtend-set 
+Replaces the extension with the given one
+
+USAGE:
+    xtend set <EXTENSION> <GLOBS>...
+
+ARGS:
+    <EXTENSION>    Extension to be toggled
+    <GLOBS>...     Glob patterns to filter files
+
+OPTIONS:
+    -h, --help    Print help information
+```
+
 ### xtend remove --help
 ```sh
 xtend-remove 

@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use clap::{builder::TypedValueParser, ArgAction, Parser};
+use clap::{builder::TypedValueParser, Parser};
 use glob::GlobError;
 
 #[derive(Parser, Debug)]
@@ -55,6 +55,16 @@ enum Action {
 
         /// Optional glob pattern to filter files.
         #[clap(value_parser)]
+        globs: Vec<String>,
+    },
+    /// Replaces the extension with the given one.
+    Set {
+        /// Extension to be toggled.
+        #[clap(value_parser = ExtensionParser)]
+        extension: String,
+
+        /// Glob patterns to filter files.
+        #[clap(value_parser, required = true)]
         globs: Vec<String>,
     },
     /// Adds an extension to all found files.
@@ -148,6 +158,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
         Action::Add { globs, extension } => {
+            let paths = get_files(&globs)?;
+            for path in paths {
+                let new_name = match path.extension() {
+                    Some(ext) => {
+                        let mut ext = ext.to_os_string();
+                        ext.push(".");
+                        ext.push(&extension);
+                        path.with_extension(ext)
+                    }
+                    None => path.with_extension(&extension),
+                };
+                std::fs::rename(&path, new_name)?
+            }
+        }
+        Action::Set { globs, extension } => {
             let paths = get_files(&globs)?;
             for path in paths {
                 std::fs::rename(&path, path.with_extension(&extension))?;
