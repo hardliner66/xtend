@@ -1,7 +1,4 @@
-use std::{
-    ffi::OsString,
-    path::PathBuf,
-};
+use std::{ffi::OsString, path::PathBuf};
 
 use clap::{builder::TypedValueParser, Parser};
 
@@ -36,6 +33,13 @@ impl TypedValueParser for ExtensionParser {
 #[derive(Parser, Debug)]
 enum Action {
     /// Adds an extension when it's missing or removes it when it's present.
+    #[clap(
+        visible_alias = "%",
+        visible_alias = "|",
+        visible_alias = "t",
+        visible_alias = "tog",
+        visible_alias = "tgl"
+    )]
     Toggle {
         /// Extension to be toggled.
         #[clap(value_parser = ExtensionParser)]
@@ -46,20 +50,17 @@ enum Action {
         files: Vec<PathBuf>,
     },
     /// Toggles between two extensions.
+    #[clap(visible_alias = "^", visible_alias = "tb")]
     ToggleBetween {
         /// Extension 1.
         #[clap(value_parser = ExtensionParser)]
         extension1: OsString,
 
-        /// Extension 2.
-        #[clap(value_parser = ExtensionParser)]
-        extension2: OsString,
-
-        /// List of files to change.
-        #[clap(value_parser)]
-        files: Vec<PathBuf>,
+        #[clap(subcommand)]
+        and: And,
     },
     /// Replaces the extension with the given one.
+    #[clap(visible_alias = "=", visible_alias = "s")]
     Set {
         /// Extension to be toggled.
         #[clap(value_parser = ExtensionParser)]
@@ -70,6 +71,7 @@ enum Action {
         files: Vec<PathBuf>,
     },
     /// Adds an extension to all found files.
+    #[clap(visible_alias = "+", visible_alias = "a")]
     Add {
         /// add extension even if the file already has the same extension.
         #[clap(short, long, action)]
@@ -84,6 +86,12 @@ enum Action {
         files: Vec<PathBuf>,
     },
     /// Removes an extension from all found files.
+    #[clap(
+        visible_alias = "-",
+        visible_alias = "r",
+        visible_alias = "rem",
+        visible_alias = "rmv"
+    )]
     Remove {
         /// The extension to be removed from a file. Removes any extension if not set.
         #[clap(value_parser = ExtensionParser)]
@@ -95,12 +103,31 @@ enum Action {
     },
 }
 
+#[derive(Parser, Debug)]
+enum And {
+    #[clap(visible_alias = "%")]
+    And {
+        /// Extension 2.
+        #[clap(value_parser = ExtensionParser)]
+        extension2: OsString,
+
+        /// List of files to change.
+        #[clap(value_parser)]
+        files: Vec<PathBuf>,
+    },
+}
+
 fn is_file(pb: &&PathBuf) -> bool {
     pb.is_file()
 }
 
-fn get_files(files: &[PathBuf]) -> Vec<&PathBuf> {
-    files.into_iter().filter(is_file).collect()
+fn get_files(files: &[PathBuf]) -> Result<Vec<&PathBuf>, &str> {
+    let files = files.into_iter().filter(is_file).collect::<Vec<_>>();
+    if files.len() == 0 {
+        Err("No files match filter!")
+    } else {
+        Ok(files)
+    }
 }
 
 fn append_extension(path: &PathBuf, extension: &OsString, force: bool) -> PathBuf {
@@ -123,11 +150,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     match args.action {
         Action::ToggleBetween {
-            files,
             extension1,
-            extension2,
+            and: And::And { extension2, files },
         } => {
-            let paths = get_files(&files);
+            let mut new_files = Vec::with_capacity(files.len() * 2);
+            for file in files {
+                new_files.push(file.clone());
+                if let Some(ext) = file.extension() {
+                    if ext == extension1 {
+                        new_files.push(file.with_extension(&extension2));
+                    } else if ext == extension2 {
+                        new_files.push(file.with_extension(&extension1));
+                    }
+                } else {
+                    new_files.push(file.with_extension(&extension1));
+                    new_files.push(file.with_extension(&extension2));
+                }
+            }
+            let paths = get_files(&new_files)?;
             for path in paths {
                 if let Some(ext) = path.extension() {
                     if extension1 == ext {
@@ -144,7 +184,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 new_files.push(file.clone());
                 new_files.push(append_extension(&file, &extension, false));
             }
-            let paths = get_files(&new_files);
+            let paths = get_files(&new_files)?;
             for path in paths {
                 if let Some(ext) = path.extension() {
                     if extension == ext {
@@ -163,20 +203,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             extension,
             force,
         } => {
-            let paths = get_files(&files);
+            let paths = get_files(&files)?;
             for path in paths {
                 let new_name = append_extension(path, &extension, force);
                 std::fs::rename(&path, new_name)?
             }
         }
         Action::Set { files, extension } => {
-            let paths = get_files(&files);
+            let paths = get_files(&files)?;
             for path in paths {
                 std::fs::rename(&path, path.with_extension(&extension))?;
             }
         }
         Action::Remove { files, extension } => {
-            let paths = get_files(&files);
+            let paths = get_files(&files)?;
             for path in paths {
                 if extension.is_empty() {
                     if let Some(new_path) = path.file_stem() {
